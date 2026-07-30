@@ -638,7 +638,7 @@ The sample OD may fall below the lower asymptote of the calibration curve and th
 
 ### Recommended approach
 
-In a real ELISA dataset, investigate whether the sample is:
+In an ELISA dataset, investigate whether the sample is:
 
 * Below the lower limit of detection (LLOD)
 * Below the lower limit of quantification (LLOQ)
@@ -646,7 +646,7 @@ In a real ELISA dataset, investigate whether the sample is:
 
 Avoid automatically interpreting a negative back-calculated concentration as a true biological zero.
 
-For this educational dataset, negative numerical estimates are constrained to zero:
+For this dataset, negative numerical estimates are constrained to zero:
 
 ```r
 Estimated_Conc_pg_mL <-
