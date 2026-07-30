@@ -1,5 +1,3 @@
-Here is a comprehensive, production-grade README.md file designed for your project repository. It details every aspect of the project, including the experimental design, the coding workflow, and a deep dive into the underlying biochemistry and statistical mathematics. [1] 
-------------------------------
 ## System-Level Evaluation of Anti-Inflammatory Therapeutics on Systemic TNF-α
 This repository contains a complete, single-file R data pipeline designed to ingest raw, multi-plate ELISA microplate reader output data, perform background corrections, execute technical replicate quality control, fit individual non-linear regression curves per plate, and perform robust downstream group hypothesis testing.
 ------------------------------
