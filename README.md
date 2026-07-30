@@ -14,8 +14,8 @@ An end-to-end R-based analysis pipeline for processing ELISA optical density (OD
 * [4. Mathematical and Statistical Methods](#4-mathematical-and-statistical-methods)
 
   * [4.1 Blank Correction](#41-blank-correction)
-  * [4.2 Technical Replicate QC](#42-technical-replicate-quality-control)
-  * [4.3 4-Parameter Logistic Regression](#43-4-parameter-logistic-4pl-regression)
+  * [4.2 Technical Replicate Quality Control](#42-technical-replicate-quality-control)
+  * [4.3 4-Parameter Logistic (4PL) Regression](#43-4-parameter-logistic-4pl-regression)
   * [4.4 Concentration Back-Calculation](#44-concentration-back-calculation)
   * [4.5 Statistical Inference](#45-statistical-inference)
 * [5. Installation and Quick Start](#5-installation-and-quick-start)
@@ -32,16 +32,11 @@ The dataset simulates a preclinical in vivo study evaluating the efficacy of an 
 
 | Experimental Group       | Description                         | Sample Size |
 | ------------------------ | ----------------------------------- | ----------: |
-| **Healthy Control**      | Non-inflamed baseline reference     |     $n = 8$ |
-| **Disease/Inflammation** | Untreated disease model             |     $n = 8$ |
-| **Low-dose Treatment**   | Disease model + low-dose treatment  |     $n = 8$ |
-| **High-dose Treatment**  | Disease model + high-dose treatment |     $n = 8$ |
-
-**Total biological subjects:**
-
-$$
-N = 32
-$$
+| **Healthy Control**      | Non-inflamed baseline reference     |       n = 8 |
+| **Disease/Inflammation** | Untreated disease model             |       n = 8 |
+| **Low-dose Treatment**   | Disease model + low-dose treatment  |       n = 8 |
+| **High-dose Treatment**  | Disease model + high-dose treatment |       n = 8 |
+| **Total**                |                                     |  **N = 32** |
 
 The primary outcome is **TNF-α concentration (pg/mL)** estimated from ELISA optical density measurements using plate-specific 4PL standard curves.
 
@@ -72,11 +67,9 @@ Each plate contains:
 
 Each mouse is measured in technical duplicate wells:
 
-$$
-32 \text{ mice} \times 2 \text{ technical replicates} = 64 \text{ experimental wells}
-$$
+**32 mice × 2 technical replicates = 64 experimental wells**
 
-The experimental data are accompanied by blank wells and duplicate standard curves on each plate.
+The experimental measurements are accompanied by blank wells and duplicate standard curves on each plate.
 
 ---
 
@@ -98,7 +91,7 @@ The complete workflow transforms raw ELISA optical density readings into estimat
               ┌──────────────────────┐
               │ 2. Replicate QC      │
               │ Calculate technical  │
-              │ replicate %CV        │
+              │ replicate CV%        │
               └──────────┬───────────┘
                          │
                          ▼
@@ -134,27 +127,22 @@ The complete workflow transforms raw ELISA optical density readings into estimat
 
 Background optical density is estimated independently for each ELISA plate.
 
-Let $p$ represent a specific plate:
+Let **p** represent a specific plate:
 
-$$
-p \in {1,2,3,4}
-$$
+**p ∈ {1, 2, 3, 4}**
 
-The corrected optical density for well $i$ on plate $p$ is:
+The corrected optical density for well **i** on plate **p** is:
 
-$$
-OD_{\text{Corrected},i,p}
-=========================
+<div align="center">
 
-## OD_{\text{Raw},i,p}
+**OD<sub>Corrected,i,p</sub> = OD<sub>Raw,i,p</sub> − OD̄<sub>Blank,p</sub>**
 
-\overline{OD}_{\text{Blank},p}
-$$
+</div>
 
 where:
 
-* $OD_{\text{Raw},i,p}$ = raw OD450 measurement
-* $\overline{OD}_{\text{Blank},p}$ = mean OD450 of the blank wells on plate $p$
+* **OD<sub>Raw,i,p</sub>** = raw OD450 measurement for well *i* on plate *p*
+* **OD̄<sub>Blank,p</sub>** = mean OD450 of the blank wells on plate *p*
 
 This removes plate-specific background signal before standard curve fitting.
 
@@ -164,43 +152,39 @@ This removes plate-specific background signal before standard curve fitting.
 
 Each biological sample is measured in duplicate.
 
-For replicate measurements $r_1$ and $r_2$, the mean is:
+For replicate measurements **r₁** and **r₂**, the mean is:
 
-$$
-\mu =
-\frac{r_1+r_2}{2}
-$$
+<div align="center">
+
+**μ = (r₁ + r₂) / 2**
+
+</div>
 
 The sample standard deviation is:
 
-$$
-s =
-\sqrt{
-\frac{
-(r_1-\mu)^2+(r_2-\mu)^2
-}{
-2-1
-}
-}
-$$
+<div align="center">
+
+**s = √[((r₁ − μ)² + (r₂ − μ)²) / (2 − 1)]**
+
+</div>
 
 The coefficient of variation is:
 
-$$
-%CV =
-\left(
-\frac{s}{\mu}
-\right)
-\times 100
-$$
+<div align="center">
+
+**CV% = (s / μ) × 100**
+
+</div>
 
 Technical replicate pairs exceeding the predefined threshold are flagged:
 
-$$
-%CV > 15%
-$$
+<div align="center">
 
-The flagged samples are retained for investigation rather than automatically removed from the dataset.
+**CV% > 15%**
+
+</div>
+
+Flagged samples are retained for investigation rather than automatically removed from the dataset.
 
 ---
 
@@ -208,30 +192,23 @@ The flagged samples are retained for investigation rather than automatically rem
 
 ELISA assays typically produce a nonlinear, sigmoidal relationship between analyte concentration and optical density.
 
-Therefore, a 4-parameter logistic model is fitted separately to each ELISA plate using the `drc` package.
+A 4-parameter logistic model is fitted separately to each ELISA plate using the `drc` package.
 
 The model is:
 
 <div align="center">
 
-$$
-OD(x)
-=====
-
-d+
-\frac{a-d}
-{1+\left(\frac{x}{c}\right)^b}
-$$
+**OD(x) = d + (a − d) / [1 + (x / c)ᵇ]**
 
 </div>
 
 where:
 
-* $x$ = known TNF-α concentration (pg/mL)
-* $a$ = lower asymptote
-* $d$ = upper asymptote
-* $c$ = inflection point / $ED_{50}$
-* $b$ = slope parameter
+* **x** = known TNF-α concentration in pg/mL
+* **a** = lower asymptote
+* **d** = upper asymptote
+* **c** = inflection point / ED₅₀
+* **b** = slope parameter
 
 Separate curves are fitted for each plate to account for potential plate-specific differences in assay response.
 
@@ -239,31 +216,29 @@ Separate curves are fitted for each plate to account for potential plate-specifi
 
 ## 4.4 Concentration Back-Calculation
 
-Once the 4PL curve has been fitted, the measured OD of each unknown sample can be converted back into an estimated TNF-α concentration.
+Once the 4PL curve has been fitted, the measured OD of each unknown sample is converted into an estimated TNF-α concentration.
 
-Given a sample mean corrected OD, $\overline{OD}_{\text{Sample}}$, the inverse relationship is:
+Given a sample mean corrected optical density **OD<sub>Sample</sub>**, the inverse relationship is:
 
-$$
-x
-=
+<div align="center">
 
-c
-\left[
-\frac{a-d}
-{\overline{OD}_{\text{Sample}}-d}
--1
-\right]^{1/b}
-$$
+**x = c × [((a − d) / (OD<sub>Sample</sub> − d)) − 1]<sup>1/b</sup>**
 
-where $x$ represents the estimated TNF-α concentration in pg/mL.
+</div>
+
+where **x** represents the estimated TNF-α concentration in pg/mL.
 
 The `drc::ED()` function is used to perform this back-calculation programmatically.
 
 Negative numerical estimates are constrained to zero:
 
 ```r
-Estimated_Conc_pg_mL =
-  ifelse(Estimated_Conc_pg_mL < 0, 0, Estimated_Conc_pg_mL)
+Estimated_Conc_pg_mL <-
+  ifelse(
+    Estimated_Conc_pg_mL < 0,
+    0,
+    Estimated_Conc_pg_mL
+  )
 ```
 
 > **Note:** In real ELISA analysis, samples below the assay's lower limit of quantification should generally be handled according to the assay validation protocol rather than automatically interpreted as true zero concentrations.
@@ -274,41 +249,38 @@ Estimated_Conc_pg_mL =
 
 ### One-Way ANOVA
 
-After concentration estimation, group differences are initially evaluated using a one-way analysis of variance (ANOVA).
+After concentration estimation, group differences are evaluated using a one-way analysis of variance (ANOVA).
 
 The model is:
 
-$$
-Y_{ij}
-======
+<div align="center">
 
-\mu
-+
-\alpha_i
-+
-\epsilon_{ij}
-$$
+**Y<sub>ij</sub> = μ + α<sub>i</sub> + ε<sub>ij</sub>**
+
+</div>
 
 where:
 
-* $Y_{ij}$ = estimated TNF-α concentration for mouse $j$ in group $i$
-* $\mu$ = overall mean
-* $\alpha_i$ = effect of experimental group $i$
-* $\epsilon_{ij}$ = residual error
+* **Y<sub>ij</sub>** = estimated TNF-α concentration for mouse *j* in group *i*
+* **μ** = overall mean
+* **α<sub>i</sub>** = effect of experimental group *i*
+* **ε<sub>ij</sub>** = residual error
 
 The null hypothesis is:
 
-$$
-H_0:
-\mu_1=\mu_2=\mu_3=\mu_4
-$$
+<div align="center">
+
+**H₀: μ₁ = μ₂ = μ₃ = μ₄**
+
+</div>
 
 The alternative hypothesis is:
 
-$$
-H_A:
-\text{At least one group mean differs}
-$$
+<div align="center">
+
+**Hₐ: At least one group mean differs**
+
+</div>
 
 ---
 
@@ -325,7 +297,7 @@ The analysis compares:
 * Disease/Inflammation vs High-dose Treatment
 * Low-dose Treatment vs High-dose Treatment
 
-The Tukey procedure uses the studentized range distribution to calculate multiplicity-adjusted $p$-values.
+The Tukey procedure uses the studentized range distribution to calculate multiplicity-adjusted p-values.
 
 ---
 
@@ -333,7 +305,9 @@ The Tukey procedure uses the studentized range distribution to calculate multipl
 
 ## Prerequisites
 
-Install R and RStudio, then install the required packages:
+Install R and RStudio.
+
+Then install the required R packages:
 
 ```r
 install.packages(c(
@@ -373,7 +347,7 @@ Clone the repository:
 git clone https://github.com/YOUR_USERNAME/ELISA_TNF_Alpha_Analysis.git
 ```
 
-Navigate to the project:
+Navigate to the project directory:
 
 ```bash
 cd ELISA_TNF_Alpha_Analysis
@@ -397,7 +371,7 @@ The core analysis is implemented in:
 scripts/elisa_master_pipeline.R
 ```
 
-### Load Packages
+## Load Required Packages
 
 ```r
 library(tidyverse)
@@ -408,13 +382,13 @@ library(patchwork)
 library(ggpubr)
 ```
 
-### Read Data
+## Read Dataset
 
 ```r
 df <- read.csv("data/MouseTNF_elisa_data.csv")
 ```
 
-### Blank Correction
+## 1. Blank Correction
 
 ```r
 blanks <- df %>%
@@ -432,7 +406,7 @@ df_corrected <- df %>%
   )
 ```
 
-### Technical Replicate QC
+## 2. Technical Replicate QC
 
 ```r
 qc_summary <- df_corrected %>%
@@ -452,7 +426,7 @@ qc_summary <- df_corrected %>%
   )
 ```
 
-### 4PL Standard Curve Fitting
+## 3. 4PL Standard Curve Fitting
 
 ```r
 model_4pl <- drm(
@@ -462,7 +436,7 @@ model_4pl <- drm(
 )
 ```
 
-### Back-Calculate Unknown Concentrations
+## 4. Back-Calculate Unknown Concentrations
 
 ```r
 predicted_concs <- ED(
@@ -473,7 +447,7 @@ predicted_concs <- ED(
 )[, 1]
 ```
 
-### Statistical Testing
+## 5. Statistical Testing
 
 ```r
 anova_model <- aov(
@@ -484,6 +458,20 @@ anova_model <- aov(
 TukeyHSD(anova_model)
 ```
 
+## 6. Generate Visual Dashboard
+
+The pipeline generates a multi-panel dashboard containing:
+
+1. **4PL ELISA standard calibration curves**
+2. **Technical replicate quality control**
+3. **Estimated TNF-α concentrations by experimental group**
+
+The final dashboard is exported as:
+
+```text
+results/elisa_complete_analysis_dashboard.png
+```
+
 ---
 
 # 7. Results and Interpretation
@@ -492,24 +480,26 @@ TukeyHSD(anova_model)
 
 The analysis identified a significant difference in TNF-α concentration across the four experimental groups:
 
-$$
-F(3,28)=14.8,
-\qquad
-p<0.001
-$$
+<div align="center">
+
+**F(3, 28) = 14.8**
+
+**p < 0.001**
+
+</div>
 
 This indicates that at least one experimental group differed significantly from the others.
 
 ### Pairwise Comparisons
 
-| Comparison            | Mean Difference (pg/mL) | Adjusted $p$-value | Interpretation        |
-| --------------------- | ----------------------: | -----------------: | --------------------- |
-| Disease vs Healthy    |                 +641.98 |            < 0.001 | Significant increase  |
-| Low Dose vs Healthy   |                 +231.39 |              0.155 | Not significant       |
-| High Dose vs Healthy  |                  +61.62 |              0.937 | Not significant       |
-| Low Dose vs Disease   |                 −410.59 |              0.003 | Significant reduction |
-| High Dose vs Disease  |                 −580.36 |            < 0.001 | Significant reduction |
-| High Dose vs Low Dose |                 −169.77 |              0.397 | Not significant       |
+| Comparison            | Mean Difference (pg/mL) | Adjusted p-value | Interpretation        |
+| --------------------- | ----------------------: | ---------------: | --------------------- |
+| Disease vs Healthy    |                 +641.98 |          < 0.001 | Significant increase  |
+| Low Dose vs Healthy   |                 +231.39 |            0.155 | Not significant       |
+| High Dose vs Healthy  |                  +61.62 |            0.937 | Not significant       |
+| Low Dose vs Disease   |                 −410.59 |            0.003 | Significant reduction |
+| High Dose vs Disease  |                 −580.36 |          < 0.001 | Significant reduction |
+| High Dose vs Low Dose |                 −169.77 |            0.397 | Not significant       |
 
 ### Biological Interpretation
 
@@ -521,7 +511,7 @@ The results support the following interpretation:
 
 3. **High-dose treatment:** High-dose treatment produced the largest numerical reduction in TNF-α relative to untreated disease.
 
-4. **Recovery toward baseline:** TNF-α concentrations in the high-dose group were statistically indistinguishable from healthy controls ($p=0.937$).
+4. **Recovery toward baseline:** TNF-α concentrations in the high-dose group were statistically indistinguishable from healthy controls (**p = 0.937**).
 
 > **Important:** Statistical similarity to healthy controls does not by itself prove complete biological recovery or clearance of molecular pathology. It indicates that, for the TNF-α outcome measured in this experiment, the two groups could not be statistically distinguished.
 
@@ -529,7 +519,7 @@ The results support the following interpretation:
 
 # 8. Troubleshooting Guide
 
-## A. Poor 4PL Fit or Saturation
+## A. Poor 4PL Fit or Signal Saturation
 
 ### What happens?
 
@@ -648,7 +638,7 @@ The sample OD may fall below the lower asymptote of the calibration curve and th
 
 ### Recommended approach
 
-In a real experimental dataset, investigate whether the sample is:
+In a real ELISA dataset, investigate whether the sample is:
 
 * Below the lower limit of detection (LLOD)
 * Below the lower limit of quantification (LLOQ)
@@ -688,6 +678,20 @@ This project uses the following R packages:
 
 This project demonstrates a complete workflow for transforming raw ELISA optical density measurements into interpretable biological results:
 
-> **Raw OD450 → Quality Control → Blank Correction → 4PL Calibration → Concentration Estimation → Statistical Testing → Biological Interpretation**
+```text
+Raw OD450
+    ↓
+Blank Correction
+    ↓
+Technical Replicate QC
+    ↓
+4PL Calibration
+    ↓
+TNF-α Concentration Estimation
+    ↓
+Statistical Testing
+    ↓
+Biological Interpretation
+```
 
-The analysis highlights how careful statistical methodology can connect **laboratory measurements** with **quantitative biological conclusions**.
+The analysis demonstrates how statistical methods can connect **laboratory measurements** with **quantitative biological conclusions**.
