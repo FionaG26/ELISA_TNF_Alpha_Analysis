@@ -1,166 +1,693 @@
-# System-Level Evaluation of Anti-Inflammatory Therapeutics on Systemic TNF-α
-## 1. Experimental Design Overview
-The dataset tracks a classic in vivo preclinical validation study evaluating an anti-inflammatory drug candidate across four experimental arms ($n = 8$ biological subjects per arm, $N = 32$ total mice):
+# 🧬 System-Level Evaluation of Anti-Inflammatory Therapeutics on Systemic TNF-α
 
-   1. Healthy Control ($n=8$): Baseline group providing the homeostatic, non-inflamed reference value.
-   2. Disease/Inflammation ($n=8$): Untreated vehicle control group modeling acute, severe system-wide inflammation.
-   3. Low-dose Treatment ($n=8$): Cohort subjected to the disease model and treated with a low dose of the test therapeutic.
-   4. High-dose Treatment ($n=8$): Cohort subjected to the disease model and treated with a high dose of the test therapeutic.
+An end-to-end R-based analysis pipeline for processing ELISA optical density (OD450) data, performing plate-specific quality control, fitting nonlinear 4-parameter logistic (4PL) standard curves, estimating TNF-α concentrations, and evaluating treatment effects statistically.
 
-## Microplate Setup Logistics
-To capture realistic laboratory batch effects, the biological samples are structured across 4 independent ELISA plates (block allocation layout: exactly 2 mice from each of the 4 groups are distributed per plate). Every individual biological mouse sample is run in technical duplicates ($n=2$ wells per mouse), yielding 64 experimental data rows. Additionally, each plate contains a 2-well blank block and an 8-point standard concentration ladder run in duplicate to calibrate signal generation.
-------------------------------
-## 2. Computational Pipeline Architecture
-The unified R script processes the raw microplate file through five distinct modular steps:
+> **Research question:** Does anti-inflammatory treatment reduce systemic TNF-α levels in a mouse model of inflammation?
 
-  [Raw OD450 Data File]
-           │
-           ▼
- [1. Blank Correction]  ──► Extracts plate-specific mean background noise ($OD_{blank}$)
-           │
-           ▼
- [2. Replicate QC]      ──► Computes %CV; highlights sample wells violating the <15% noise ceiling
-           │
-           ▼
- [3. 4PL Optimization]  ──► Fits separate, sigmoidal standard calibration curves for each plate
-           │
-           ▼
- [4. Back-Calculation]  ──► Inverts the 4PL matrix to map sample $OD$ readings into true pg/mL units
-           │
-           ▼
- [5. Global Inference]  ──► Executes a One-Way ANOVA paired with an all-vs-all Tukey HSD Post-Hoc Test
+---
 
-------------------------------
-## 3. Mathematical & Statistical Specifications## A. Blank Modification
-Optical baseline density adjustments are isolated by plate. Let $p$ represent a specific plate ($p \in \{1, 2, 3, 4\}$). The adjusted optical density ($OD_{Corrected}$) for any given well $i$ on plate $p$ is calculated as:
-$$OD_{Corrected, \, i, \, p} = OD_{Raw, \, i, \, p} - \overline{OD}_{Blank, \, p}$$ 
-Where $\overline{OD}_{Blank, \, p}$ is the arithmetic mean of the two unreactive buffer blank control wells on that specific plate.
-## B. Technical Quality Control Metric (%CV)
-To isolate human pipetting errors, structural plate defects, or localized bubbles, the pipeline calculates the Coefficient of Variation ($CV$) across every technical duplicate pair. For a mouse sample with replicate readings $r_1$ and $r_2$:
-$$\mu = \frac{r_1 + r_2}{2}$$ 
-$$\sigma = \sqrt{\frac{(r_1 - \mu)^2 + (r_2 - \mu)^2}{2 - 1}}$$ 
-$$\%CV = \left( \frac{\sigma}{\mu} \right) \times 100$$ 
-Pairs yielding a $\%CV > 15\%$ are flagged in the terminal execution log.
-## C. 4-Parameter Logistic (4PL) Curve Curve Fitting
-Because colorimetric enzyme saturation profiles create an S-shaped (sigmoidal) non-linear curve, standard linear regressions introduce systemic error. The pipeline uses the specialized drc library to fit a 4-Parameter Logistic (4PL) regression independently for each plate using the standard wells [drc]:
-$$OD(x) = d + \frac{a - d}{1 + \left(\frac{x}{c}\right)^b}$$ 
-Where:
+## 📋 Table of Contents
 
-* $x$: The explicit, known antigen standard concentration (pg/mL).
-* $a$: The lower asymptote (estimated background/minimum $OD$ boundary).
-* $d$: The upper asymptote (estimated maximum hook-effect/saturation $OD$ boundary).
-* $c$: The $ED_{50}$ parameter (the point of inflection; concentration yielding a response exactly halfway between $a$ and $d$).
-* $b$: The Hill slope coefficient (defining the steepness of the linear dynamic range).
+* [1. Experimental Design](#1-experimental-design)
+* [2. ELISA Microplate Design](#2-elisa-microplate-design)
+* [3. Computational Analysis Pipeline](#3-computational-analysis-pipeline)
+* [4. Mathematical and Statistical Methods](#4-mathematical-and-statistical-methods)
 
-## D. Concentration Interpolation (Inversion Function)
-To back-calculate unknown mouse concentrations from observed optical values, the 4PL equation is mathematically inverted [drc]. For a mouse sample with a known mean corrected optical density ($\overline{OD}_{Sample}$), the calculated concentration $x$ is:
-$$x = c \cdot \left( \frac{a - d}{\overline{OD}_{Sample} - d} - 1 \right)^{\frac{1}{b}}$$ 
-## E. Multi-Group Hypothesis Testing (ANOVA & Tukey's HSD)
-Because plate-to-plate variation collapses post-4PL curve scaling, variations are evaluated using a standard global analysis of variance model:
-$$Y_{ij} = \mu + \alpha_i + \epsilon_{ij}$$ 
-Where $Y_{ij}$ is the calculated concentration for mouse $j$ in group $i$, $\mu$ is the baseline mean, $\alpha_i$ represents the treatment effect, and $\epsilon_{ij} \sim N(0, \sigma^2)$ is the random residual error.
-To execute all-versus-all structural contrasts without inflating Type I false-positive errors, a pairwise Tukey's Honestly Significant Difference (HSD) test is computed. The test calculates a studentized range distribution $q$-statistic for every unique group pair:
-$$q = \frac{\overline{Y}_A - \overline{Y}_B}{SE} = \frac{\overline{Y}_A - \overline{Y}_B}{\sqrt{\frac{MS_{Residual}}{n}}}$$ 
-Where $MS_{Residual}$ represents the within-group variance extracted from the global ANOVA table, and $SE$ is the standard error of the comparison (106.31 in this dataset). The cumulative area under the outer tail of this $q$-distribution yields the final Adjusted $p$-value.
-------------------------------
-## 4. Execution & Quick Start Guide## Core Prerequisites
-Open an R console or your development IDE and run the following command to download the structural dependencies:
+  * [4.1 Blank Correction](#41-blank-correction)
+  * [4.2 Technical Replicate QC](#42-technical-replicate-quality-control)
+  * [4.3 4-Parameter Logistic Regression](#43-4-parameter-logistic-4pl-regression)
+  * [4.4 Concentration Back-Calculation](#44-concentration-back-calculation)
+  * [4.5 Statistical Inference](#45-statistical-inference)
+* [5. Installation and Quick Start](#5-installation-and-quick-start)
+* [6. Main Analysis Workflow](#6-main-analysis-workflow)
+* [7. Results and Interpretation](#7-results-and-interpretation)
+* [8. Troubleshooting Guide](#8-troubleshooting-guide)
+* [9. R Packages](#9-r-packages)
 
-install.packages(c("tidyverse", "drc", "lme4", "lmerTest", "patchwork", "ggpubr"))
+---
+
+# 1. Experimental Design
+
+The dataset simulates a preclinical in vivo study evaluating the efficacy of an anti-inflammatory treatment across four experimental groups.
+
+| Experimental Group       | Description                         | Sample Size |
+| ------------------------ | ----------------------------------- | ----------: |
+| **Healthy Control**      | Non-inflamed baseline reference     |     $n = 8$ |
+| **Disease/Inflammation** | Untreated disease model             |     $n = 8$ |
+| **Low-dose Treatment**   | Disease model + low-dose treatment  |     $n = 8$ |
+| **High-dose Treatment**  | Disease model + high-dose treatment |     $n = 8$ |
+
+**Total biological subjects:**
+
+$$
+N = 32
+$$
+
+The primary outcome is **TNF-α concentration (pg/mL)** estimated from ELISA optical density measurements using plate-specific 4PL standard curves.
+
+---
+
+# 2. ELISA Microplate Design
+
+To simulate realistic laboratory batch effects, biological samples are distributed across **four independent ELISA plates**.
+
+Each plate contains:
+
+* 2 mice from each experimental group
+* 8 biological samples total
+* 2 technical replicates per biological sample
+* 2 blank wells
+* 8-point TNF-α standard curve
+* Duplicate standard measurements
+
+### Plate Allocation
+
+| Plate     | Healthy | Disease | Low Dose | High Dose | Total Mice |
+| --------- | ------: | ------: | -------: | --------: | ---------: |
+| Plate 1   |       2 |       2 |        2 |         2 |          8 |
+| Plate 2   |       2 |       2 |        2 |         2 |          8 |
+| Plate 3   |       2 |       2 |        2 |         2 |          8 |
+| Plate 4   |       2 |       2 |        2 |         2 |          8 |
+| **Total** |   **8** |   **8** |    **8** |     **8** |     **32** |
+
+Each mouse is measured in technical duplicate wells:
+
+$$
+32 \text{ mice} \times 2 \text{ technical replicates} = 64 \text{ experimental wells}
+$$
+
+The experimental data are accompanied by blank wells and duplicate standard curves on each plate.
+
+---
+
+# 3. Computational Analysis Pipeline
+
+The complete workflow transforms raw ELISA optical density readings into estimated TNF-α concentrations and statistical conclusions.
+
+```text
+                 Raw ELISA OD450 Data
+                         │
+                         ▼
+              ┌──────────────────────┐
+              │ 1. Blank Correction  │
+              │ Plate-specific       │
+              │ background removal   │
+              └──────────┬───────────┘
+                         │
+                         ▼
+              ┌──────────────────────┐
+              │ 2. Replicate QC      │
+              │ Calculate technical  │
+              │ replicate %CV        │
+              └──────────┬───────────┘
+                         │
+                         ▼
+              ┌──────────────────────┐
+              │ 3. 4PL Calibration   │
+              │ Fit plate-specific   │
+              │ nonlinear curves     │
+              └──────────┬───────────┘
+                         │
+                         ▼
+              ┌──────────────────────┐
+              │ 4. Back-Calculation  │
+              │ Convert OD450 into   │
+              │ TNF-α concentration  │
+              └──────────┬───────────┘
+                         │
+                         ▼
+              ┌──────────────────────┐
+              │ 5. Statistical       │
+              │ Inference            │
+              │ ANOVA + Tukey HSD    │
+              └──────────┬───────────┘
+                         │
+                         ▼
+                  Biological Insight
+```
+
+---
+
+# 4. Mathematical and Statistical Methods
+
+## 4.1 Blank Correction
+
+Background optical density is estimated independently for each ELISA plate.
+
+Let $p$ represent a specific plate:
+
+$$
+p \in {1,2,3,4}
+$$
+
+The corrected optical density for well $i$ on plate $p$ is:
+
+$$
+OD_{\text{Corrected},i,p}
+=========================
+
+## OD_{\text{Raw},i,p}
+
+\overline{OD}_{\text{Blank},p}
+$$
+
+where:
+
+* $OD_{\text{Raw},i,p}$ = raw OD450 measurement
+* $\overline{OD}_{\text{Blank},p}$ = mean OD450 of the blank wells on plate $p$
+
+This removes plate-specific background signal before standard curve fitting.
+
+---
+
+## 4.2 Technical Replicate Quality Control
+
+Each biological sample is measured in duplicate.
+
+For replicate measurements $r_1$ and $r_2$, the mean is:
+
+$$
+\mu =
+\frac{r_1+r_2}{2}
+$$
+
+The sample standard deviation is:
+
+$$
+s =
+\sqrt{
+\frac{
+(r_1-\mu)^2+(r_2-\mu)^2
+}{
+2-1
+}
+}
+$$
+
+The coefficient of variation is:
+
+$$
+%CV =
+\left(
+\frac{s}{\mu}
+\right)
+\times 100
+$$
+
+Technical replicate pairs exceeding the predefined threshold are flagged:
+
+$$
+%CV > 15%
+$$
+
+The flagged samples are retained for investigation rather than automatically removed from the dataset.
+
+---
+
+## 4.3 4-Parameter Logistic (4PL) Regression
+
+ELISA assays typically produce a nonlinear, sigmoidal relationship between analyte concentration and optical density.
+
+Therefore, a 4-parameter logistic model is fitted separately to each ELISA plate using the `drc` package.
+
+The model is:
+
+<div align="center">
+
+$$
+OD(x)
+=====
+
+d+
+\frac{a-d}
+{1+\left(\frac{x}{c}\right)^b}
+$$
+
+</div>
+
+where:
+
+* $x$ = known TNF-α concentration (pg/mL)
+* $a$ = lower asymptote
+* $d$ = upper asymptote
+* $c$ = inflection point / $ED_{50}$
+* $b$ = slope parameter
+
+Separate curves are fitted for each plate to account for potential plate-specific differences in assay response.
+
+---
+
+## 4.4 Concentration Back-Calculation
+
+Once the 4PL curve has been fitted, the measured OD of each unknown sample can be converted back into an estimated TNF-α concentration.
+
+Given a sample mean corrected OD, $\overline{OD}_{\text{Sample}}$, the inverse relationship is:
+
+$$
+x
+=
+
+c
+\left[
+\frac{a-d}
+{\overline{OD}_{\text{Sample}}-d}
+-1
+\right]^{1/b}
+$$
+
+where $x$ represents the estimated TNF-α concentration in pg/mL.
+
+The `drc::ED()` function is used to perform this back-calculation programmatically.
+
+Negative numerical estimates are constrained to zero:
+
+```r
+Estimated_Conc_pg_mL =
+  ifelse(Estimated_Conc_pg_mL < 0, 0, Estimated_Conc_pg_mL)
+```
+
+> **Note:** In real ELISA analysis, samples below the assay's lower limit of quantification should generally be handled according to the assay validation protocol rather than automatically interpreted as true zero concentrations.
+
+---
+
+## 4.5 Statistical Inference
+
+### One-Way ANOVA
+
+After concentration estimation, group differences are initially evaluated using a one-way analysis of variance (ANOVA).
+
+The model is:
+
+$$
+Y_{ij}
+======
+
+\mu
++
+\alpha_i
++
+\epsilon_{ij}
+$$
+
+where:
+
+* $Y_{ij}$ = estimated TNF-α concentration for mouse $j$ in group $i$
+* $\mu$ = overall mean
+* $\alpha_i$ = effect of experimental group $i$
+* $\epsilon_{ij}$ = residual error
+
+The null hypothesis is:
+
+$$
+H_0:
+\mu_1=\mu_2=\mu_3=\mu_4
+$$
+
+The alternative hypothesis is:
+
+$$
+H_A:
+\text{At least one group mean differs}
+$$
+
+---
+
+### Tukey's HSD Post-Hoc Test
+
+When the global ANOVA indicates a significant group effect, Tukey's Honestly Significant Difference (HSD) test is used to perform all pairwise comparisons while controlling the family-wise error rate.
+
+The analysis compares:
+
+* Healthy Control vs Disease/Inflammation
+* Healthy Control vs Low-dose Treatment
+* Healthy Control vs High-dose Treatment
+* Disease/Inflammation vs Low-dose Treatment
+* Disease/Inflammation vs High-dose Treatment
+* Low-dose Treatment vs High-dose Treatment
+
+The Tukey procedure uses the studentized range distribution to calculate multiplicity-adjusted $p$-values.
+
+---
+
+# 5. Installation and Quick Start
+
+## Prerequisites
+
+Install R and RStudio, then install the required packages:
+
+```r
+install.packages(c(
+  "tidyverse",
+  "drc",
+  "lme4",
+  "lmerTest",
+  "patchwork",
+  "ggpubr"
+))
+```
+
+## Project Structure
+
+```text
+ELISA_TNF_Alpha_Analysis/
+│
+├── data/
+│   └── MouseTNF_elisa_data.csv
+│
+├── scripts/
+│   └── elisa_master_pipeline.R
+│
+├── results/
+│   └── elisa_complete_analysis_dashboard.png
+│
+├── README.md
+│
+└── .gitignore
+```
 
 ## Running the Analysis
 
-   1. Place your data file (synthetic_elisa_data.csv) directly into your active R workspace folder.
-   2. Save the complete consolidated pipeline file as elisa_master_pipeline.R.
-   3. Execute the workflow inside RStudio or via your system command terminal: [2] 
+Clone the repository:
 
-Rscript elisa_master_pipeline.R
+```bash
+git clone https://github.com/YOUR_USERNAME/ELISA_TNF_Alpha_Analysis.git
+```
 
-------------------------------
-## 5. Main Script Template (elisa_master_pipeline.R)
+Navigate to the project:
 
+```bash
+cd ELISA_TNF_Alpha_Analysis
+```
+
+Run the analysis:
+
+```bash
+Rscript scripts/elisa_master_pipeline.R
+```
+
+Alternatively, open `elisa_master_pipeline.R` in RStudio and run the script interactively.
+
+---
+
+# 6. Main Analysis Workflow
+
+The core analysis is implemented in:
+
+```text
+scripts/elisa_master_pipeline.R
+```
+
+### Load Packages
+
+```r
 library(tidyverse)
-library(drc)       
-library(lme4)      
-library(lmerTest)  
-library(patchwork) 
-library(ggpubr)    
+library(drc)
+library(lme4)
+library(lmerTest)
+library(patchwork)
+library(ggpubr)
+```
 
-# Read Dataset
-df <- read.csv("synthetic_elisa_data.csv")
+### Read Data
 
-# 1. Blank Corrections
-blanks <- df %>% filter(Sample_Type == "Blank") %>% group_by(Plate) %>% summarize(Mean_Blank_OD = mean(Raw_OD450), .groups = 'drop')
-df_corrected <- df %>% left_join(blanks, by = "Plate") %>% mutate(Corrected_OD = Raw_OD450 - Mean_Blank_OD)
+```r
+df <- read.csv("data/MouseTNF_elisa_data.csv")
+```
 
-# 2. Duplicate Quality Control
-qc_summary <- df_corrected %>% filter(Sample_Type != "Blank") %>% group_by(Plate, Sample_Type, Group, Mouse_ID, True_Conc_pg_mL) %>%
-  summarize(Mean_OD = mean(Corrected_OD), SD_OD = sd(Corrected_OD), CV_Percent = (SD_OD / Mean_OD) * 100, .groups = 'drop')
+### Blank Correction
 
-# 3 & 4. 4PL Standard Curve Regressions & Interpolation
-standards <- df_corrected %>% filter(Sample_Type == "Standard")
-estimated_samples <- data.frame()
-unique_plates <- unique(df_corrected$Plate)
+```r
+blanks <- df %>%
+  filter(Sample_Type == "Blank") %>%
+  group_by(Plate) %>%
+  summarize(
+    Mean_Blank_OD = mean(Raw_OD450),
+    .groups = "drop"
+  )
 
-for (p in unique_plates) {
-  plate_standards <- standards %>% filter(Plate == p)
-  model_4pl <- drm(Corrected_OD ~ True_Conc_pg_mL, data = plate_standards, fct = LL.4()) # [drc]
-  
-  plate_experimental <- df_corrected %>% filter(Plate == p, Sample_Type == "Experimental") %>%
-    group_by(Plate, Group, Mouse_ID, True_Conc_pg_mL) %>% summarize(Mean_OD = mean(Corrected_OD), .groups = 'drop')
-  
-  predicted_concs <- ED(model_4pl, plate_experimental$Mean_OD, type = "absolute", display = FALSE)[, 1] # [drc]
-  plate_experimental$Estimated_Conc_pg_mL <- ifelse(predicted_concs < 0, 0, predicted_concs)
-  estimated_samples <- rbind(estimated_samples, plate_experimental)
-}
+df_corrected <- df %>%
+  left_join(blanks, by = "Plate") %>%
+  mutate(
+    Corrected_OD = Raw_OD450 - Mean_Blank_OD
+  )
+```
 
-# 5. Statistical Inference (Tukey's HSD)
-estimated_samples$Group <- factor(estimated_samples$Group, levels = c('Healthy Control', 'Disease/Inflammation', 'Low-dose Treatment', 'High-dose Treatment'))
-anova_model <- aov(Estimated_Conc_pg_mL ~ Group, data = estimated_samples)
-print(TukeyHSD(anova_model))
+### Technical Replicate QC
 
-# 6. Generate Complete Visual Dashboard
-# (Insert your preferred plot layouts here using patchwork/ggpubr for export)
+```r
+qc_summary <- df_corrected %>%
+  filter(Sample_Type != "Blank") %>%
+  group_by(
+    Plate,
+    Sample_Type,
+    Group,
+    Mouse_ID,
+    True_Conc_pg_mL
+  ) %>%
+  summarize(
+    Mean_OD = mean(Corrected_OD),
+    SD_OD = sd(Corrected_OD),
+    CV_Percent = (SD_OD / Mean_OD) * 100,
+    .groups = "drop"
+  )
+```
 
-------------------------------
-## 6. Interpreting the Outputs## Final Biological Conclusions
+### 4PL Standard Curve Fitting
 
-* Disease Verification: The Disease/Inflammation arm demonstrates a massive, highly significant spike in TNF-α relative to healthy targets ($+641.98\text{ pg/mL}, \, p < 0.001$). This confirms that the model successfully induced severe acute inflammation.
-* Low-Dose Therapeutic Impact: The low-dose regimen achieves a statistically valid downward shift in systemic inflammation, shedding over $410\text{ pg/mL}$ of reactive protein relative to the untreated controls ($p = 0.0032$).
-* High-Dose Full Recovery Profile: The high-dose treatment drops systemic inflammation by $580.36\text{ pg/mL}$ compared to the disease group ($p < 0.001$). Crucially, when compared against the completely healthy baseline group, the adjusted probability values reveal no statistical difference ($p = 0.937$). This proves that the high-dose intervention successfully clears the molecular pathology, returning the animals to a normal baseline condition.
+```r
+model_4pl <- drm(
+  Corrected_OD ~ True_Conc_pg_mL,
+  data = plate_standards,
+  fct = LL.4()
+)
+```
 
-## 7. Preclinical Wet-Lab & Pipeline Troubleshooting Guide
+### Back-Calculate Unknown Concentrations
 
-When translating this computational pipeline to actual benchwork data, variations in temperature, pipetting mechanics, and binding saturation will introduce anomalies. Use this diagnostic matrix to troubleshoot both your laboratory assay and your R pipeline.
+```r
+predicted_concs <- ED(
+  model_4pl,
+  plate_experimental$Mean_OD,
+  type = "absolute",
+  display = FALSE
+)[, 1]
+```
 
-### A. High Hook Effect (Signal Saturation at High Concentrations)
-* **What happens:** The highest concentration points on your standard curve flatten out, bend backward, or form a plateau, causing the upper asymptote ($d$ parameter in your 4PL model) to fit poorly.
-* **Wet-Lab Root Cause:** High-dose antigen saturation. The enzyme-linked antibodies completely saturate the capturing surface, blinding the optical reader to further concentration increases.
-* **Pipeline Symptom:** The `drm()` function throws optimization convergence errors, or back-calculated values near the upper limits yield infinite (`Inf`) or `NaN` values.
-* **Corrective Action:** 
-  * Increase the dilution factor of your high-concentration standards or shorten your detection substrate incubation time.
-  * *Pipeline Fix:* Switch your fitting metric from a 4-Parameter Logistic (`LL.4()`) to a 5-Parameter Logistic curve (`LL.5()`), which adds an asymmetry parameter ($e$) to better model skewed saturation caps [drc].
+### Statistical Testing
 
-### B. High Technical Coefficient of Variation (%CV > 15%)
-* **What happens:** The pipeline flags a high number of experimental samples in **PART 2** for failing the technical replicate constraint.
-* **Wet-Lab Root Cause:** Poor manual pipetting consistency, localized edge effects due to plate evaporation, or inadequate washing technique leaving residual unbound conjugate in specific wells.
-* **Pipeline Symptom:** Inflated Standard Error ($SE$) values in your downstream models, which directly decreases your $t$-values and destroys your statistical power ($p$-values inflate/lose significance).
-* **Corrective Action:**
-  * Use multi-channel pipettes, ensure tips are firmly seated, change tips between rows, and use automated plate washers if available. Ensure the plate layout randomizes group locations to avoid edge biases.
-  * *Pipeline Fix:* Implement an automated sample filtering step to identify the rogue well in a duplicate pair and structurally drop it if it acts as a leverage outlier, preserving the matching replicate value.
+```r
+anova_model <- aov(
+  Estimated_Conc_pg_mL ~ Group,
+  data = estimated_samples
+)
 
-### C. Extreme Plate-to-Plate Baseline Shift (Batch Drift)
-* **What happens:** Standards on `Plate_1` yield completely different absolute OD readings than identical standards run on `Plate_4`.
-* **Wet-Lab Root Cause:** Variations in room temperature during execution, different incubation durations, or using substrate reagents from different manufacturing lot numbers across plates.
-* **Pipeline Symptom:** Running a standard One-Way ANOVA yields confusing group variances, and your random effects variance in `lmer()` spikes drastically away from zero.
-* **Corrective Action:**
-  * Run all plates simultaneously using a single master mix of reagents. Strictly time the stop-solution addition down to the second across all four plates.
-  * *Pipeline Fix:* Do **not** compress your data into a standard One-Way ANOVA if plate variance is high. Revert back to the Mixed-Effects Model (`lmer(Estimated_Conc_pg_mL ~ Group + (1 | Plate))`) to isolate and adjust out the plate block-effect intercept mathematically.
+TukeyHSD(anova_model)
+```
 
-### D. Zero or Negative Concentration Interpolation
-* **What happens:** Real mouse samples yield an estimated concentration of exactly `0 pg/mL` or slight negative numerical outputs.
-* **Wet-Lab Root Cause:** The true biological level of TNF-α in the sample is below the Lower Limit of Detection (LLOD) of your assay. This is highly common in the `Healthy Control` group.
-* **Pipeline Symptom:** The raw OD reading falls mathematically below the lower asymptote ($a$ parameter) of your standard curve, forcing the inverted mathematical equation to solve for a negative number.
-* **Corrective Action:**
-  * Increase the loading volume of your unknown biological samples, or use a high-sensitivity ELISA kit option.
-  * *Pipeline Fix:* Retain the boundary constraint line currently inside the master R script: `mutate(Estimated_Conc_pg_mL = ifelse(Estimated_Conc_pg_mL < 0, 0, Estimated_Conc_pg_mL))`. This ensures your dataset maintains physical reality (negative protein mass cannot exist) without breaking downstream variance computations.
+---
+
+# 7. Results and Interpretation
+
+## Overall Treatment Effect
+
+The analysis identified a significant difference in TNF-α concentration across the four experimental groups:
+
+$$
+F(3,28)=14.8,
+\qquad
+p<0.001
+$$
+
+This indicates that at least one experimental group differed significantly from the others.
+
+### Pairwise Comparisons
+
+| Comparison            | Mean Difference (pg/mL) | Adjusted $p$-value | Interpretation        |
+| --------------------- | ----------------------: | -----------------: | --------------------- |
+| Disease vs Healthy    |                 +641.98 |            < 0.001 | Significant increase  |
+| Low Dose vs Healthy   |                 +231.39 |              0.155 | Not significant       |
+| High Dose vs Healthy  |                  +61.62 |              0.937 | Not significant       |
+| Low Dose vs Disease   |                 −410.59 |              0.003 | Significant reduction |
+| High Dose vs Disease  |                 −580.36 |            < 0.001 | Significant reduction |
+| High Dose vs Low Dose |                 −169.77 |              0.397 | Not significant       |
+
+### Biological Interpretation
+
+The results support the following interpretation:
+
+1. **Disease induction:** The disease/inflammation group showed substantially higher TNF-α concentrations than healthy controls, indicating successful induction of an inflammatory phenotype in the simulated dataset.
+
+2. **Low-dose treatment:** Low-dose treatment significantly reduced TNF-α concentrations relative to untreated disease.
+
+3. **High-dose treatment:** High-dose treatment produced the largest numerical reduction in TNF-α relative to untreated disease.
+
+4. **Recovery toward baseline:** TNF-α concentrations in the high-dose group were statistically indistinguishable from healthy controls ($p=0.937$).
+
+> **Important:** Statistical similarity to healthy controls does not by itself prove complete biological recovery or clearance of molecular pathology. It indicates that, for the TNF-α outcome measured in this experiment, the two groups could not be statistically distinguished.
+
+---
+
+# 8. Troubleshooting Guide
+
+## A. Poor 4PL Fit or Saturation
+
+### What happens?
+
+The highest standard concentrations flatten or deviate substantially from the expected sigmoidal response.
+
+### Potential causes
+
+* Signal saturation
+* Excessively concentrated standards
+* Incorrect dilution series
+* Substrate incubation time
+* Assay-specific hook effects
+
+### Pipeline symptoms
+
+The `drm()` function may produce:
+
+* Convergence warnings
+* Poor parameter estimates
+* `Inf` values
+* `NaN` values
+
+### Possible solutions
+
+**Laboratory:**
+
+* Increase dilution of high-concentration standards.
+* Reduce substrate incubation time.
+* Verify standard preparation.
+
+**Computational:**
+
+Consider whether a 5-parameter logistic model is more appropriate:
+
+```r
+drm(
+  Corrected_OD ~ True_Conc_pg_mL,
+  data = plate_standards,
+  fct = LL.5()
+)
+```
+
+The 5PL model adds an asymmetry parameter and may better represent asymmetric calibration curves.
+
+---
+
+## B. High Technical Replicate CV
+
+### What happens?
+
+A large number of duplicate measurements exceed the predefined 15% CV threshold.
+
+### Potential causes
+
+* Pipetting variability
+* Edge effects
+* Inconsistent washing
+* Air bubbles
+* Inadequate mixing
+
+### Possible solutions
+
+**Laboratory:**
+
+* Improve pipetting consistency.
+* Use calibrated pipettes.
+* Minimize edge effects.
+* Standardize washing procedures.
+
+**Computational:**
+
+Flag high-CV samples for investigation rather than automatically deleting observations.
+
+> **Best practice:** Avoid automatically removing individual wells solely because they have a high CV. Investigate the raw measurements and assay quality criteria first.
+
+---
+
+## C. High Plate-to-Plate Variation
+
+### What happens?
+
+Equivalent standards produce substantially different calibration curves across plates.
+
+### Potential causes
+
+* Temperature differences
+* Incubation time differences
+* Reagent lot variation
+* Timing differences
+* Plate handling effects
+
+### Computational approach
+
+If plate-level variation remains substantial after plate-specific calibration, consider a mixed-effects model:
+
+```r
+lmer(
+  Estimated_Conc_pg_mL ~ Group + (1 | Plate),
+  data = estimated_samples
+)
+```
+
+This models **Group** as a fixed effect while treating **Plate** as a random intercept.
+
+---
+
+## D. Zero or Negative Back-Calculated Concentrations
+
+### What happens?
+
+Some samples produce estimates near or below zero.
+
+### Potential cause
+
+The sample OD may fall below the lower asymptote of the calibration curve and therefore outside the validated quantitative range of the assay.
+
+### Recommended approach
+
+In a real experimental dataset, investigate whether the sample is:
+
+* Below the lower limit of detection (LLOD)
+* Below the lower limit of quantification (LLOQ)
+* Outside the validated standard curve range
+
+Avoid automatically interpreting a negative back-calculated concentration as a true biological zero.
+
+For this educational dataset, negative numerical estimates are constrained to zero:
+
+```r
+Estimated_Conc_pg_mL <-
+  ifelse(
+    Estimated_Conc_pg_mL < 0,
+    0,
+    Estimated_Conc_pg_mL
+  )
+```
+
+---
+
+# 9. R Packages
+
+This project uses the following R packages:
+
+| Package     | Purpose                                             |
+| ----------- | --------------------------------------------------- |
+| `tidyverse` | Data manipulation and visualization                 |
+| `drc`       | Nonlinear dose-response and 4PL curve fitting       |
+| `lme4`      | Linear mixed-effects models                         |
+| `lmerTest`  | Statistical inference for mixed-effects models      |
+| `patchwork` | Combining multiple `ggplot2` figures                |
+| `ggpubr`    | Statistical annotations and publication-ready plots |
+
+---
+
+## 📊 Key Takeaway
+
+This project demonstrates a complete workflow for transforming raw ELISA optical density measurements into interpretable biological results:
+
+> **Raw OD450 → Quality Control → Blank Correction → 4PL Calibration → Concentration Estimation → Statistical Testing → Biological Interpretation**
+
+The analysis highlights how careful statistical methodology can connect **laboratory measurements** with **quantitative biological conclusions**.
