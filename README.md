@@ -28,7 +28,7 @@ An end-to-end R-based analysis pipeline for processing ELISA optical density (OD
 
 # 1. Experimental Design
 
-The dataset simulates a preclinical in vivo study evaluating the efficacy of an anti-inflammatory treatment across four experimental groups.
+The dataset shows a preclinical in vivo study evaluating the efficacy of an anti-inflammatory treatment across four experimental groups.
 
 | Experimental Group       | Description                         | Sample Size |
 | ------------------------ | ----------------------------------- | ----------: |
@@ -44,7 +44,7 @@ The primary outcome is **TNF-α concentration (pg/mL)** estimated from ELISA opt
 
 # 2. ELISA Microplate Design
 
-To simulate realistic laboratory batch effects, biological samples are distributed across **four independent ELISA plates**.
+The biological samples are distributed across **four independent ELISA plates**.
 
 Each plate contains:
 
@@ -241,7 +241,7 @@ Estimated_Conc_pg_mL <-
   )
 ```
 
-> **Note:** In real ELISA analysis, samples below the assay's lower limit of quantification should generally be handled according to the assay validation protocol rather than automatically interpreted as true zero concentrations.
+> **Note:** Samples below the assay's lower limit of quantification should generally be handled according to the assay validation protocol rather than automatically interpreted as true zero concentrations.
 
 ---
 
@@ -324,16 +324,9 @@ install.packages(c(
 
 ```text
 ELISA_TNF_Alpha_Analysis/
-│
-├── data/
 │   └── MouseTNF_elisa_data.csv
-│
-├── scripts/
-│   └── elisa_master_pipeline.R
-│
-├── results/
+│   └── curve.R
 │   └── elisa_complete_analysis_dashboard.png
-│
 ├── README.md
 │
 └── .gitignore
@@ -344,7 +337,7 @@ ELISA_TNF_Alpha_Analysis/
 Clone the repository:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/ELISA_TNF_Alpha_Analysis.git
+git clone https://github.com/FionaG26/ELISA_TNF_Alpha_Analysis.git
 ```
 
 Navigate to the project directory:
@@ -356,10 +349,10 @@ cd ELISA_TNF_Alpha_Analysis
 Run the analysis:
 
 ```bash
-Rscript scripts/elisa_master_pipeline.R
+Rscript scripts/curve.R
 ```
 
-Alternatively, open `elisa_master_pipeline.R` in RStudio and run the script interactively.
+Alternatively, open `curve.R` in RStudio and run the script interactively.
 
 ---
 
@@ -368,7 +361,7 @@ Alternatively, open `elisa_master_pipeline.R` in RStudio and run the script inte
 The core analysis is implemented in:
 
 ```text
-scripts/elisa_master_pipeline.R
+curve.R
 ```
 
 ## Load Required Packages
