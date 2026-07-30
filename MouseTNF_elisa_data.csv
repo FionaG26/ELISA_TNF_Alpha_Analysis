@@ -1,0 +1,137 @@
+Plate,Sample_Type,Group,Mouse_ID,True_Conc_pg_mL,Replicate,Raw_OD450
+Plate_1,Standard,Standard,Standard,0.0,1,0.0512
+Plate_1,Standard,Standard,Standard,0.0,2,0.0497
+Plate_1,Standard,Standard,Standard,7.8,1,0.1574
+Plate_1,Standard,Standard,Standard,7.8,2,0.164
+Plate_1,Standard,Standard,Standard,15.6,1,0.2576
+Plate_1,Standard,Standard,Standard,15.6,2,0.2576
+Plate_1,Standard,Standard,Standard,31.25,1,0.5025
+Plate_1,Standard,Standard,Standard,31.25,2,0.4836
+Plate_1,Standard,Standard,Standard,62.5,1,0.7907
+Plate_1,Standard,Standard,Standard,62.5,2,0.8317
+Plate_1,Standard,Standard,Standard,125.0,1,1.2577
+Plate_1,Standard,Standard,Standard,125.0,2,1.2576
+Plate_1,Standard,Standard,Standard,250.0,1,1.8233
+Plate_1,Standard,Standard,Standard,250.0,2,1.6291
+Plate_1,Standard,Standard,Standard,500.0,1,2.0306
+Plate_1,Standard,Standard,Standard,500.0,2,2.1598
+Plate_1,Blank,Blank,Blank,0.0,1,0.0427
+Plate_1,Blank,Blank,Blank,0.0,2,0.0457
+Plate_2,Standard,Standard,Standard,0.0,1,0.0573
+Plate_2,Standard,Standard,Standard,0.0,2,0.0558
+Plate_2,Standard,Standard,Standard,7.8,1,0.187
+Plate_2,Standard,Standard,Standard,7.8,2,0.1723
+Plate_2,Standard,Standard,Standard,15.6,1,0.2878
+Plate_2,Standard,Standard,Standard,15.6,2,0.2664
+Plate_2,Standard,Standard,Standard,31.25,1,0.4798
+Plate_2,Standard,Standard,Standard,31.25,2,0.496
+Plate_2,Standard,Standard,Standard,62.5,1,0.7832
+Plate_2,Standard,Standard,Standard,62.5,2,0.8467
+Plate_2,Standard,Standard,Standard,125.0,1,1.258
+Plate_2,Standard,Standard,Standard,125.0,2,1.2781
+Plate_2,Standard,Standard,Standard,250.0,1,1.7524
+Plate_2,Standard,Standard,Standard,250.0,2,1.9741
+Plate_2,Standard,Standard,Standard,500.0,1,2.2393
+Plate_2,Standard,Standard,Standard,500.0,2,2.1223
+Plate_2,Blank,Blank,Blank,0.0,1,0.0541
+Plate_2,Blank,Blank,Blank,0.0,2,0.0488
+Plate_3,Standard,Standard,Standard,0.0,1,0.0404
+Plate_3,Standard,Standard,Standard,0.0,2,0.0361
+Plate_3,Standard,Standard,Standard,7.8,1,0.1239
+Plate_3,Standard,Standard,Standard,7.8,2,0.1341
+Plate_3,Standard,Standard,Standard,15.6,1,0.2462
+Plate_3,Standard,Standard,Standard,15.6,2,0.2395
+Plate_3,Standard,Standard,Standard,31.25,1,0.4399
+Plate_3,Standard,Standard,Standard,31.25,2,0.4358
+Plate_3,Standard,Standard,Standard,62.5,1,0.7353
+Plate_3,Standard,Standard,Standard,62.5,2,0.7654
+Plate_3,Standard,Standard,Standard,125.0,1,1.2539
+Plate_3,Standard,Standard,Standard,125.0,2,1.3513
+Plate_3,Standard,Standard,Standard,250.0,1,1.8286
+Plate_3,Standard,Standard,Standard,250.0,2,1.6392
+Plate_3,Standard,Standard,Standard,500.0,1,2.2359
+Plate_3,Standard,Standard,Standard,500.0,2,2.1579
+Plate_3,Blank,Blank,Blank,0.0,1,0.0396
+Plate_3,Blank,Blank,Blank,0.0,2,0.0423
+Plate_4,Standard,Standard,Standard,0.0,1,0.0578
+Plate_4,Standard,Standard,Standard,0.0,2,0.0576
+Plate_4,Standard,Standard,Standard,7.8,1,0.1547
+Plate_4,Standard,Standard,Standard,7.8,2,0.159
+Plate_4,Standard,Standard,Standard,15.6,1,0.2755
+Plate_4,Standard,Standard,Standard,15.6,2,0.2842
+Plate_4,Standard,Standard,Standard,31.25,1,0.4647
+Plate_4,Standard,Standard,Standard,31.25,2,0.4716
+Plate_4,Standard,Standard,Standard,62.5,1,0.772
+Plate_4,Standard,Standard,Standard,62.5,2,0.7683
+Plate_4,Standard,Standard,Standard,125.0,1,1.3433
+Plate_4,Standard,Standard,Standard,125.0,2,1.3784
+Plate_4,Standard,Standard,Standard,250.0,1,1.7989
+Plate_4,Standard,Standard,Standard,250.0,2,1.896
+Plate_4,Standard,Standard,Standard,500.0,1,2.2751
+Plate_4,Standard,Standard,Standard,500.0,2,2.1626
+Plate_4,Blank,Blank,Blank,0.0,1,0.0489
+Plate_4,Blank,Blank,Blank,0.0,2,0.0517
+Plate_1,Experimental,Healthy Control,Mouse_01,14.87,1,0.2485
+Plate_1,Experimental,Healthy Control,Mouse_01,14.87,2,0.2556
+Plate_1,Experimental,Healthy Control,Mouse_02,22.18,1,0.3823
+Plate_1,Experimental,Healthy Control,Mouse_02,22.18,2,0.3524
+Plate_1,Experimental,Disease/Inflammation,Mouse_09,425.95,1,2.1652
+Plate_1,Experimental,Disease/Inflammation,Mouse_09,425.95,2,2.1297
+Plate_1,Experimental,Disease/Inflammation,Mouse_10,492.02,1,2.0017
+Plate_1,Experimental,Disease/Inflammation,Mouse_10,492.02,2,2.2112
+Plate_1,Experimental,Low-dose Treatment,Mouse_17,218.99,1,1.7122
+Plate_1,Experimental,Low-dose Treatment,Mouse_17,218.99,2,1.9173
+Plate_1,Experimental,Low-dose Treatment,Mouse_18,284.23,1,1.8712
+Plate_1,Experimental,Low-dose Treatment,Mouse_18,284.23,2,1.9179
+Plate_1,Experimental,High-dose Treatment,Mouse_25,86.15,1,1.0164
+Plate_1,Experimental,High-dose Treatment,Mouse_25,86.15,2,0.9586
+Plate_1,Experimental,High-dose Treatment,Mouse_26,85.4,1,1.0699
+Plate_1,Experimental,High-dose Treatment,Mouse_26,85.4,2,1.0502
+Plate_2,Experimental,Healthy Control,Mouse_03,7.79,1,0.181
+Plate_2,Experimental,Healthy Control,Mouse_03,7.79,2,0.1662
+Plate_2,Experimental,Healthy Control,Mouse_04,18.42,1,0.3489
+Plate_2,Experimental,Healthy Control,Mouse_04,18.42,2,0.3031
+Plate_2,Experimental,Disease/Inflammation,Mouse_11,651.14,1,2.4403
+Plate_2,Experimental,Disease/Inflammation,Mouse_11,651.14,2,2.6303
+Plate_2,Experimental,Disease/Inflammation,Mouse_12,395.31,1,2.0034
+Plate_2,Experimental,Disease/Inflammation,Mouse_12,395.31,2,2.0481
+Plate_2,Experimental,Low-dose Treatment,Mouse_19,256.14,1,1.8329
+Plate_2,Experimental,Low-dose Treatment,Mouse_19,256.14,2,1.7779
+Plate_2,Experimental,Low-dose Treatment,Mouse_20,318.5,1,1.8191
+Plate_2,Experimental,Low-dose Treatment,Mouse_20,318.5,2,1.9788
+Plate_2,Experimental,High-dose Treatment,Mouse_27,80.1,1,0.9334
+Plate_2,Experimental,High-dose Treatment,Mouse_27,80.1,2,1.0091
+Plate_2,Experimental,High-dose Treatment,Mouse_28,75.44,1,0.9034
+Plate_2,Experimental,High-dose Treatment,Mouse_28,75.44,2,1.0203
+Plate_3,Experimental,Healthy Control,Mouse_05,15.33,1,0.2246
+Plate_3,Experimental,Healthy Control,Mouse_05,15.33,2,0.23
+Plate_3,Experimental,Healthy Control,Mouse_06,13.92,1,0.2235
+Plate_3,Experimental,Healthy Control,Mouse_06,13.92,2,0.2016
+Plate_3,Experimental,Disease/Inflammation,Mouse_13,367.65,1,2.064
+Plate_3,Experimental,Disease/Inflammation,Mouse_13,367.65,2,2.1742
+Plate_3,Experimental,Disease/Inflammation,Mouse_14,396.95,1,1.9161
+Plate_3,Experimental,Disease/Inflammation,Mouse_14,396.95,2,2.1028
+Plate_3,Experimental,Low-dose Treatment,Mouse_21,209.76,1,1.6955
+Plate_3,Experimental,Low-dose Treatment,Mouse_21,209.76,2,1.7392
+Plate_3,Experimental,Low-dose Treatment,Mouse_22,230.34,1,1.633
+Plate_3,Experimental,Low-dose Treatment,Mouse_22,230.34,2,1.6258
+Plate_3,Experimental,High-dose Treatment,Mouse_29,56.16,1,0.7483
+Plate_3,Experimental,High-dose Treatment,Mouse_29,56.16,2,0.7401
+Plate_3,Experimental,High-dose Treatment,Mouse_30,72.01,1,0.8961
+Plate_3,Experimental,High-dose Treatment,Mouse_30,72.01,2,0.9003
+Plate_4,Experimental,Healthy Control,Mouse_07,15.35,1,0.2584
+Plate_4,Experimental,Healthy Control,Mouse_07,15.35,2,0.2706
+Plate_4,Experimental,Healthy Control,Mouse_08,9.13,1,0.183
+Plate_4,Experimental,Healthy Control,Mouse_08,9.13,2,0.1739
+Plate_4,Experimental,Disease/Inflammation,Mouse_15,565.72,1,2.5105
+Plate_4,Experimental,Disease/Inflammation,Mouse_15,565.72,2,2.3507
+Plate_4,Experimental,Disease/Inflammation,Mouse_16,488.55,1,2.0902
+Plate_4,Experimental,Disease/Inflammation,Mouse_16,488.55,2,2.2956
+Plate_4,Experimental,Low-dose Treatment,Mouse_23,226.66,1,1.6507
+Plate_4,Experimental,Low-dose Treatment,Mouse_23,226.66,2,1.8036
+Plate_4,Experimental,Low-dose Treatment,Mouse_24,173.4,1,1.6261
+Plate_4,Experimental,Low-dose Treatment,Mouse_24,173.4,2,1.474
+Plate_4,Experimental,High-dose Treatment,Mouse_31,73.43,1,0.9616
+Plate_4,Experimental,High-dose Treatment,Mouse_31,73.43,2,0.9364
+Plate_4,Experimental,High-dose Treatment,Mouse_32,65.46,1,0.88
+Plate_4,Experimental,High-dose Treatment,Mouse_32,65.46,2,0.9254
