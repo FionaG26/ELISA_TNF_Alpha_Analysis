@@ -1,6 +1,4 @@
-## System-Level Evaluation of Anti-Inflammatory Therapeutics on Systemic TNF-α
-This repository contains a complete, single-file R data pipeline designed to ingest raw, multi-plate ELISA microplate reader output data, perform background corrections, execute technical replicate quality control, fit individual non-linear regression curves per plate, and perform robust downstream group hypothesis testing.
-------------------------------
+# System-Level Evaluation of Anti-Inflammatory Therapeutics on Systemic TNF-α
 ## 1. Experimental Design Overview
 The dataset tracks a classic in vivo preclinical validation study evaluating an anti-inflammatory drug candidate across four experimental arms ($n = 8$ biological subjects per arm, $N = 32$ total mice):
 
@@ -131,5 +129,38 @@ print(TukeyHSD(anova_model))
 * Low-Dose Therapeutic Impact: The low-dose regimen achieves a statistically valid downward shift in systemic inflammation, shedding over $410\text{ pg/mL}$ of reactive protein relative to the untreated controls ($p = 0.0032$).
 * High-Dose Full Recovery Profile: The high-dose treatment drops systemic inflammation by $580.36\text{ pg/mL}$ compared to the disease group ($p < 0.001$). Crucially, when compared against the completely healthy baseline group, the adjusted probability values reveal no statistical difference ($p = 0.937$). This proves that the high-dose intervention successfully clears the molecular pathology, returning the animals to a normal baseline condition.
 
-------------------------------
-💡 To wrap up your project workspace completely, would you like me to add a section to this README outlining a Troubleshooting Checklist for common wet-lab ELISA failures (like high hook effects or baseline standard drift)?
+## 7. Preclinical Wet-Lab & Pipeline Troubleshooting Guide
+
+When translating this computational pipeline to actual benchwork data, variations in temperature, pipetting mechanics, and binding saturation will introduce anomalies. Use this diagnostic matrix to troubleshoot both your laboratory assay and your R pipeline.
+
+### A. High Hook Effect (Signal Saturation at High Concentrations)
+* **What happens:** The highest concentration points on your standard curve flatten out, bend backward, or form a plateau, causing the upper asymptote ($d$ parameter in your 4PL model) to fit poorly.
+* **Wet-Lab Root Cause:** High-dose antigen saturation. The enzyme-linked antibodies completely saturate the capturing surface, blinding the optical reader to further concentration increases.
+* **Pipeline Symptom:** The `drm()` function throws optimization convergence errors, or back-calculated values near the upper limits yield infinite (`Inf`) or `NaN` values.
+* **Corrective Action:** 
+  * Increase the dilution factor of your high-concentration standards or shorten your detection substrate incubation time.
+  * *Pipeline Fix:* Switch your fitting metric from a 4-Parameter Logistic (`LL.4()`) to a 5-Parameter Logistic curve (`LL.5()`), which adds an asymmetry parameter ($e$) to better model skewed saturation caps [drc].
+
+### B. High Technical Coefficient of Variation (%CV > 15%)
+* **What happens:** The pipeline flags a high number of experimental samples in **PART 2** for failing the technical replicate constraint.
+* **Wet-Lab Root Cause:** Poor manual pipetting consistency, localized edge effects due to plate evaporation, or inadequate washing technique leaving residual unbound conjugate in specific wells.
+* **Pipeline Symptom:** Inflated Standard Error ($SE$) values in your downstream models, which directly decreases your $t$-values and destroys your statistical power ($p$-values inflate/lose significance).
+* **Corrective Action:**
+  * Use multi-channel pipettes, ensure tips are firmly seated, change tips between rows, and use automated plate washers if available. Ensure the plate layout randomizes group locations to avoid edge biases.
+  * *Pipeline Fix:* Implement an automated sample filtering step to identify the rogue well in a duplicate pair and structurally drop it if it acts as a leverage outlier, preserving the matching replicate value.
+
+### C. Extreme Plate-to-Plate Baseline Shift (Batch Drift)
+* **What happens:** Standards on `Plate_1` yield completely different absolute OD readings than identical standards run on `Plate_4`.
+* **Wet-Lab Root Cause:** Variations in room temperature during execution, different incubation durations, or using substrate reagents from different manufacturing lot numbers across plates.
+* **Pipeline Symptom:** Running a standard One-Way ANOVA yields confusing group variances, and your random effects variance in `lmer()` spikes drastically away from zero.
+* **Corrective Action:**
+  * Run all plates simultaneously using a single master mix of reagents. Strictly time the stop-solution addition down to the second across all four plates.
+  * *Pipeline Fix:* Do **not** compress your data into a standard One-Way ANOVA if plate variance is high. Revert back to the Mixed-Effects Model (`lmer(Estimated_Conc_pg_mL ~ Group + (1 | Plate))`) to isolate and adjust out the plate block-effect intercept mathematically.
+
+### D. Zero or Negative Concentration Interpolation
+* **What happens:** Real mouse samples yield an estimated concentration of exactly `0 pg/mL` or slight negative numerical outputs.
+* **Wet-Lab Root Cause:** The true biological level of TNF-α in the sample is below the Lower Limit of Detection (LLOD) of your assay. This is highly common in the `Healthy Control` group.
+* **Pipeline Symptom:** The raw OD reading falls mathematically below the lower asymptote ($a$ parameter) of your standard curve, forcing the inverted mathematical equation to solve for a negative number.
+* **Corrective Action:**
+  * Increase the loading volume of your unknown biological samples, or use a high-sensitivity ELISA kit option.
+  * *Pipeline Fix:* Retain the boundary constraint line currently inside the master R script: `mutate(Estimated_Conc_pg_mL = ifelse(Estimated_Conc_pg_mL < 0, 0, Estimated_Conc_pg_mL))`. This ensures your dataset maintains physical reality (negative protein mass cannot exist) without breaking downstream variance computations.
